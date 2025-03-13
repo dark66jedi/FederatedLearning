@@ -1,0 +1,8 @@
+{
+    "Model": "CNN",
+    "Train Loss": 0.04706440968811512,
+    "Train Accuracy": 0.45475,
+    "Test Loss": 0.04948542935848236,
+    "Test Accuracy": 0.4218,
+    "Training Time (s)": 15.87397575378418
+}

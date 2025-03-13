@@ -1,0 +1,8 @@
+{
+    "Model": "EfficientNet-B0",
+    "Train Loss": 0.05346575865149498,
+    "Train Accuracy": 0.37,
+    "Test Loss": 0.05430562263727188,
+    "Test Accuracy": 0.355,
+    "Training Time (s)": 59.011603593826294
+}

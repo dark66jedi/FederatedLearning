@@ -1,0 +1,8 @@
+{
+    "Model": "MobileNet",
+    "Train Loss": 0.05646505561470985,
+    "Train Accuracy": 0.3325,
+    "Test Loss": 0.05889284043312073,
+    "Test Accuracy": 0.3078,
+    "Training Time (s)": 43.39915180206299
+}

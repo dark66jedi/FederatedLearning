@@ -1,0 +1,8 @@
+{
+    "Model": "ResNet",
+    "Train Loss": 0.03484994092583656,
+    "Train Accuracy": 0.605,
+    "Test Loss": 0.04908638561367989,
+    "Test Accuracy": 0.4666,
+    "Training Time (s)": 49.21717190742493
+}
