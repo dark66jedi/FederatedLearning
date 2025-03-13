@@ -1,8 +1,11 @@
 {
     "Model": "CNN",
-    "Train Loss": 0.04706440968811512,
-    "Train Accuracy": 0.45475,
-    "Test Loss": 0.04948542935848236,
-    "Test Accuracy": 0.4218,
-    "Training Time (s)": 15.87397575378418
+    "Train Loss": 0.046667644798755646,
+    "Train Accuracy": 0.45275,
+    "Test Loss": 0.048016129410266874,
+    "Test Accuracy": 0.4413,
+    "Training Time (s)": 26.230867624282837,
+    "Peak GPU Usage (MB)": 20.80126953125,
+    "Avg CPU Usage (%)": "N/A",
+    "RAM Usage (%)": 56.6
 }

@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+import psutil  # For CPU and RAM monitoring
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_CLIENTS = 10
@@ -67,7 +68,10 @@ def train(net, trainloader, epochs: int):
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters())
     net.train()
-    
+
+    peak_gpu_usage = 0  # Track peak GPU usage
+    cpu_usage = []  # Store CPU usage at each step
+
     for epoch in range(epochs):
         correct, total, epoch_loss = 0, 0, 0.0
         for batch in trainloader:
@@ -81,8 +85,17 @@ def train(net, trainloader, epochs: int):
             epoch_loss += loss.item()
             total += labels.size(0)
             correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
-        
-    return epoch_loss / len(trainloader.dataset), correct / total
+
+            # Track GPU usage
+            if DEVICE == "cuda":
+                peak_gpu_usage = max(peak_gpu_usage, torch.cuda.max_memory_allocated())
+
+            # Track CPU usage
+            else:
+                cpu_usage.append(psutil.cpu_percent(interval=None))
+
+    avg_cpu_usage = sum(cpu_usage) / len(cpu_usage) if cpu_usage else 0
+    return epoch_loss / len(trainloader.dataset), correct / total, peak_gpu_usage, avg_cpu_usage
 
 def test(net, testloader):
     criterion = torch.nn.CrossEntropyLoss()
@@ -107,19 +120,28 @@ def main():
     start_time = time.time()
     net = Net().to(DEVICE)
     trainloader, valloader, testloader = load_datasets(partition_id=0)
-    
-    train_loss, train_acc = train(net, trainloader, epochs=5)
+
+    train_loss, train_acc, peak_gpu_usage, avg_cpu_usage = train(net, trainloader, epochs=5)
     test_loss, test_acc = test(net, testloader)
-    
+
     elapsed_time = time.time() - start_time
+
+    # GPU or CPU usage metrics
+    gpu_memory_usage = peak_gpu_usage / (1024**2) if DEVICE == "cuda" else 0  # Convert bytes to MB
+    ram_usage = psutil.virtual_memory().percent  # RAM usage in %
+
     results = {
         "Model": "CNN",
         "Train Loss": train_loss,
         "Train Accuracy": train_acc,
         "Test Loss": test_loss,
         "Test Accuracy": test_acc,
-        "Training Time (s)": elapsed_time
+        "Training Time (s)": elapsed_time,
+        "Peak GPU Usage (MB)": gpu_memory_usage if DEVICE == "cuda" else "N/A",
+        "Avg CPU Usage (%)": avg_cpu_usage if DEVICE == "cpu" else "N/A",
+        "RAM Usage (%)": ram_usage
     }
+
     save_results(results)
     print(f"Results saved to {RESULTS_DIR}/cnn_results.txt")
 
