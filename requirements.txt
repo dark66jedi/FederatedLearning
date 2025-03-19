@@ -55,6 +55,7 @@ pathspec==0.12.1
 pillow==11.1.0
 propcache==0.3.0
 protobuf==4.25.6
+psutil==7.0.0
 pyarrow==19.0.1
 pycparser==2.22
 pycryptodome==3.21.0

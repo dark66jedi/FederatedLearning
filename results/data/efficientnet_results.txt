@@ -1,0 +1,11 @@
+{
+    "Model": "EfficientNet-B0",
+    "Train Loss": 0.054580444395542146,
+    "Train Accuracy": 0.3565,
+    "Test Loss": 0.056153505229949954,
+    "Test Accuracy": 0.3341,
+    "Training Time (s)": 68.12461543083191,
+    "Peak GPU Usage (MB)": 127.93701171875,
+    "Avg CPU Usage (%)": "N/A",
+    "RAM Usage (%)": 56.8
+}

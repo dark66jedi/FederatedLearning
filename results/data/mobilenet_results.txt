@@ -1,0 +1,11 @@
+{
+    "Model": "MobileNet",
+    "Train Loss": 0.057185698091983796,
+    "Train Accuracy": 0.32725,
+    "Test Loss": 0.059356187176704406,
+    "Test Accuracy": 0.2794,
+    "Training Time (s)": 45.04007029533386,
+    "Peak GPU Usage (MB)": 95.6484375,
+    "Avg CPU Usage (%)": "N/A",
+    "RAM Usage (%)": 57.7
+}

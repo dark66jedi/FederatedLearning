@@ -1,0 +1,11 @@
+{
+    "Model": "ResNet",
+    "Train Loss": 0.0360203805565834,
+    "Train Accuracy": 0.59175,
+    "Test Loss": 0.04416924092173576,
+    "Test Accuracy": 0.5014,
+    "Training Time (s)": 48.54712104797363,
+    "Peak GPU Usage (MB)": 232.46484375,
+    "Avg CPU Usage (%)": "N/A",
+    "RAM Usage (%)": 55.4
+}
