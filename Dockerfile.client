@@ -1,0 +1,7 @@
+FROM python:3.10
+
+WORKDIR /app
+COPY client.py /app/client.py
+RUN pip install flwr torch torchvision flwr_datasets
+
+CMD ["python", "client.py"]
