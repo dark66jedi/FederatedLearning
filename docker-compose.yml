@@ -1,9 +1,12 @@
-version: "3"
+version: '3.8'
+
 services:
   server:
     build:
       context: .
       dockerfile: Dockerfile.server
+    networks:
+      - fedlearn-net
     ports:
       - "8080:8080"
 
@@ -11,5 +14,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.client
+    networks:
+      - fedlearn-net
     depends_on:
       - server
+
+  client2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    networks:
+      - fedlearn-net
+    depends_on:
+      - server
+
+networks:
+  fedlearn-net:
