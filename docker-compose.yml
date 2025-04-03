@@ -9,24 +9,25 @@ services:
       - fedlearn-net
     ports:
       - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+          cpus: "0.20"
+    memswap_limit: 2G
 
-  client1:
+  client:
     build:
       context: .
       dockerfile: Dockerfile.client
     networks:
       - fedlearn-net
-    depends_on:
-      - server
-
-  client2:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    networks:
-      - fedlearn-net
-    depends_on:
-      - server
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+          cpus: "0.10"
+    memswap_limit: 1G
 
 networks:
   fedlearn-net:
