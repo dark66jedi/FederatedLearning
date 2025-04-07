@@ -80,4 +80,4 @@ class FLClient(fl.client.NumPyClient):
 if __name__ == "__main__":
     import sys
     client_id = sys.argv[1]  # Get client ID from command-line argument
-    fl.client.start_numpy_client("server:8080", client=FLClient(client_id))
+    fl.client.start_numpy_client("34.205.17.115:8080", client=FLClient(client_id))
