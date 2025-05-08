@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  classical-ml:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: classical-ml-training
+    container_name: classical-ml-container
+    volumes:
+      - ./results:/app/results
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Default command - override via docker-compose run with custom args
+    command: ["--save_model", "--save_results", "--plot", "--output_dir", "/app/results"]
+    # For GPU support, uncomment the following (requires nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
