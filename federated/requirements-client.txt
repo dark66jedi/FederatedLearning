@@ -1,0 +1,8 @@
+flwr>=1.4.0
+torch>=1.13.0
+torchvision>=0.14.0
+flwr-datasets>=0.0.2
+scikit-learn>=1.0.0
+numpy>=1.21.0
+pandas>=1.3.0
+matplotlib>=3.4.0

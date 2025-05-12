@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  fl-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: fl-client-${CLIENT_ID:-1}
+    volumes:
+      - ./client_results:/app/results
+    environment:
+      - CLIENT_ID=${CLIENT_ID:-1}
+      - SERVER_ADDRESS=${SERVER_ADDRESS:-fl-server:8080}
+    command: python client.py ${CLIENT_ID:-1} --server ${SERVER_ADDRESS:-fl-server:8080} --save --output_dir /app/results
+    restart: on-failure

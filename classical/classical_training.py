@@ -202,51 +202,81 @@ class ClassicalTrainer:
         df.to_csv(filename, index=False)
         print(f"Results saved to {filename}")
     
-    def plot_metrics(self, save_path=None):
-        """Plot training and evaluation metrics."""
-        plt.figure(figsize=(15, 10))
+    def plot_metrics(self, save_dir=None):
+        """Plot training and evaluation metrics as separate image files."""
+        # Create the save directory if it doesn't exist and a path is provided
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
         
         # Plot loss
-        plt.subplot(2, 2, 1)
-        plt.plot(self.history['epoch'], self.history['train_loss'], label='Train Loss')
-        plt.plot(self.history['epoch'], self.history['test_loss'], label='Test Loss')
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.history['epoch'], self.history['train_loss'], 'b-', label='Train Loss')
+        plt.plot(self.history['epoch'], self.history['test_loss'], 'r-', label='Test Loss')
         plt.title('Loss over Epochs')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
+        plt.grid(True, alpha=0.3)
         plt.legend()
+        plt.tight_layout()
+        
+        if save_dir:
+            loss_path = os.path.join(save_dir, "loss.png")
+            plt.savefig(loss_path)
+            print(f"Loss plot saved to {loss_path}")
+        plt.show()
+        plt.close()
         
         # Plot accuracy
-        plt.subplot(2, 2, 2)
-        plt.plot(self.history['epoch'], self.history['accuracy'], label='Accuracy')
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.history['epoch'], self.history['accuracy'], 'g-', label='Accuracy')
         plt.title('Accuracy over Epochs')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
+        plt.grid(True, alpha=0.3)
         plt.legend()
+        plt.tight_layout()
+        
+        if save_dir:
+            accuracy_path = os.path.join(save_dir, "accuracy.png")
+            plt.savefig(accuracy_path)
+            print(f"Accuracy plot saved to {accuracy_path}")
+        plt.show()
+        plt.close()
         
         # Plot precision and recall
-        plt.subplot(2, 2, 3)
-        plt.plot(self.history['epoch'], self.history['precision'], label='Precision')
-        plt.plot(self.history['epoch'], self.history['recall'], label='Recall')
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.history['epoch'], self.history['precision'], 'm-', label='Precision')
+        plt.plot(self.history['epoch'], self.history['recall'], 'c-', label='Recall')
         plt.title('Precision and Recall over Epochs')
         plt.xlabel('Epoch')
         plt.ylabel('Score')
+        plt.grid(True, alpha=0.3)
         plt.legend()
+        plt.tight_layout()
+        
+        if save_dir:
+            pr_path = os.path.join(save_dir, "precision_recall.png")
+            plt.savefig(pr_path)
+            print(f"Precision and Recall plot saved to {pr_path}")
+        plt.show()
+        plt.close()
         
         # Plot F1 score
-        plt.subplot(2, 2, 4)
-        plt.plot(self.history['epoch'], self.history['f1'], label='F1 Score')
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.history['epoch'], self.history['f1'], 'orange', label='F1 Score')
         plt.title('F1 Score over Epochs')
         plt.xlabel('Epoch')
         plt.ylabel('F1 Score')
+        plt.grid(True, alpha=0.3)
         plt.legend()
-        
         plt.tight_layout()
         
-        if save_path:
-            plt.savefig(save_path)
-            print(f"Metrics plot saved to {save_path}")
-        
+        if save_dir:
+            f1_path = os.path.join(save_dir, "f1_score.png")
+            plt.savefig(f1_path)
+            print(f"F1 Score plot saved to {f1_path}")
         plt.show()
+        plt.close()
 
 
 if __name__ == "__main__":
@@ -257,7 +287,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_model", action="store_true", help="Save the trained model")
     parser.add_argument("--save_results", action="store_true", help="Save training results")
     parser.add_argument("--plot", action="store_true", help="Plot training metrics")
-    parser.add_argument("--output_dir", default="./results_classical", help="Directory to save outputs")
+    parser.add_argument("--output_dir", default="./results", help="Directory to save outputs")
     
     args = parser.parse_args()
     
@@ -285,5 +315,7 @@ if __name__ == "__main__":
     
     # Plot and save metrics if requested
     if args.plot:
-        plot_path = os.path.join(args.output_dir, "classical_training_metrics.png")
-        trainer.plot_metrics(plot_path)
+        # Create a plots subdirectory
+        plots_dir = os.path.join(args.output_dir, "plots")
+        os.makedirs(plots_dir, exist_ok=True)
+        trainer.plot_metrics(plots_dir)

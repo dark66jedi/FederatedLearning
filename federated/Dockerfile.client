@@ -1,0 +1,21 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements-client.txt .
+RUN pip install --no-cache-dir -r requirements-client.txt
+
+# Copy client code
+COPY client.py .
+
+# Make the directory for results
+RUN mkdir -p /app/results
+
+# Command will be specified in docker-compose.yml or at runtime
