@@ -11,6 +11,3 @@ COPY server.py .
 
 # Expose the Flower server port
 EXPOSE 8080
-
-# Start the server
-CMD ["python", "server.py", "--output_dir", "/app/results"]

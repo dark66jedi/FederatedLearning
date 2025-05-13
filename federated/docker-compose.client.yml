@@ -5,11 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.client
-    container_name: fl-client-${CLIENT_ID:-1}
+    container_name: fl-client-${CLIENT_ID}
     volumes:
       - ./client_results:/app/results
     environment:
-      - CLIENT_ID=${CLIENT_ID:-1}
-      - SERVER_ADDRESS=${SERVER_ADDRESS:-fl-server:8080}
-    command: python client.py ${CLIENT_ID:-1} --server ${SERVER_ADDRESS:-fl-server:8080} --save --output_dir /app/results
+      - CLIENT_ID=${CLIENT_ID}
+      - SERVER_ADDRESS=${SERVER_ADDRESS}
+    command: >
+      python client.py ${CLIENT_ID} --server ${SERVER_ADDRESS} --save --output_dir /app/results
+
     restart: on-failure
