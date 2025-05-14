@@ -9,9 +9,9 @@ services:
     volumes:
       - ./client_results:/results
     environment:
-      - CLIENT_ID
-      - SERVER_ADDRESS
+      - CLIENT_ID=${CLIENT_ID}
+      - SERVER_ADDRESS=${SERVER_ADDRESS}
     command: >
-      python client.py --cid $CLIENT_ID --server-address $SERVER_ADDRESS --result-dir ./results
+      python client.py --cid ${CLIENT_ID} --server-address ${SERVER_ADDRESS} --result-dir ./results
 
     restart: on-failure
