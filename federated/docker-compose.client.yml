@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   fl-client:
     build:
@@ -7,11 +5,19 @@ services:
       dockerfile: Dockerfile.client
     container_name: fl-client-${CLIENT_ID}
     volumes:
-      - ./client_results:/results
+      - ./client_results:/app/results
     environment:
       - CLIENT_ID=${CLIENT_ID}
       - SERVER_ADDRESS=${SERVER_ADDRESS}
     command: >
-      python client.py --cid ${CLIENT_ID} --server-address ${SERVER_ADDRESS} --result-dir ./results
+      python client.py --cid ${CLIENT_ID} --server-address ${SERVER_ADDRESS} --result-dir /app/results
+    deploy:
+      resources:
+        limits:
+          cpus: '0.7'  # Leaving some CPU for the OS
+          memory: 100M  # Memory limit
+    # Legacy format for memory management (for older Docker versions)
+    mem_limit: 100m
+    memswap_limit: 1.5g  # Total memory + swap (2x memory)
 
     restart: on-failure
