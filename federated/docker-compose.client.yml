@@ -7,11 +7,11 @@ services:
       dockerfile: Dockerfile.client
     container_name: fl-client-${CLIENT_ID}
     volumes:
-      - ./client_results:/app/results
+      - ./client_results:/results
     environment:
-      - CLIENT_ID=${CLIENT_ID}
-      - SERVER_ADDRESS=${SERVER_ADDRESS}
+      - CLIENT_ID
+      - SERVER_ADDRESS
     command: >
-      python client.py ${CLIENT_ID} --server ${SERVER_ADDRESS} --save --output_dir /app/results
+      python client.py --cid $CLIENT_ID --server-address $SERVER_ADDRESS --result-dir ./results
 
     restart: on-failure
