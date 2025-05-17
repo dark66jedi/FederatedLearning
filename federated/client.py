@@ -87,7 +87,9 @@ class FLClient(fl.client.NumPyClient):
 
     def set_parameters(self, parameters):
         print(f"Client {self.cid}: Setting parameters...")
-        state_dict = dict(zip(self.model.state_dict().keys(), [torch.tensor(p) for p in parameters]))
+        state_dict = self.model.state_dict()
+        for k, v in zip(state_dict.keys(), parameters):
+            state_dict[k] = torch.tensor(v)
         self.model.load_state_dict(state_dict)
 
     def fit(self, parameters, config):
