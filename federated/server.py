@@ -250,7 +250,7 @@ class FederatedLearningServer:
         )
         
         # Define callbacks
-        class MetricsCallback(fl.server.ServerCallback):
+        class MetricsCallback():
             def __init__(self, server_instance):
                 self.server = server_instance
                 
@@ -274,7 +274,6 @@ class FederatedLearningServer:
             server_address="0.0.0.0:8080",  # Bind to all network interfaces
             strategy=strategy,
             config=fl.server.ServerConfig(num_rounds=self.num_rounds),
-            callbacks=[callback],
         )
 
 
