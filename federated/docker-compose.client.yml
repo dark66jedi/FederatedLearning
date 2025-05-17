@@ -14,10 +14,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.7'  # Leaving some CPU for the OS
-          memory: 100M  # Memory limit
+          cpus: '0.5'  # Leaving some CPU for the OS
+          memory: 400M  # Memory limit
     # Legacy format for memory management (for older Docker versions)
-    mem_limit: 100m
-    memswap_limit: 1.5g  # Total memory + swap (2x memory)
-
-    restart: on-failure
+    mem_limit: 400m
+    memswap_limit: 1.6g  # Total memory + swap (2x memory)

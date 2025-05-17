@@ -1,10 +1,12 @@
-FROM python:3.9-slim
+FROM python:3.10
+
+RUN pip install --upgrade pip
 
 WORKDIR /app
 
 # Install Python dependencies
 COPY requirements-client.txt .
-RUN pip install --no-cache-dir -r requirements-client.txt
+RUN pip install -r requirements-client.txt
 
 # Copy client code
 COPY client.py .
