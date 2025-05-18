@@ -190,22 +190,16 @@ class FLClient(fl.client.NumPyClient):
         all_labels = []
 
         with torch.no_grad():
-            for inputs, labels in self.testloader:
-                print(f"[DEBUG] Type of inputs: {type(inputs)}, Type of labels: {type(labels)}")
-                # Convert inputs and labels to tensors if they're not already
-                if isinstance(inputs, str):
-                    raise ValueError(f"Expected tensor for inputs but got str: {inputs}")
-                if isinstance(labels, str):
-                    raise ValueError(f"Expected tensor for labels but got str: {labels}")
-
-                inputs = inputs.to(self.device) if isinstance(inputs, torch.Tensor) else torch.tensor(inputs).to(self.device)
-                labels = labels.to(self.device) if isinstance(labels, torch.Tensor) else torch.tensor(labels).to(self.device)
-
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
-                outputs = self.model(inputs)
+            for batch in self.testloader:
+                # Properly extract images and labels from the batch dictionary
+                images, labels = batch["img"].to(DEVICE), batch["label"].to(DEVICE)
+                
+                # Forward pass
+                outputs = self.model(images)
                 loss = criterion(outputs, labels)
                 test_loss += loss.item()
 
+                # Get predictions
                 _, predicted = torch.max(outputs.data, 1)
                 all_preds.extend(predicted.cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
@@ -214,9 +208,7 @@ class FLClient(fl.client.NumPyClient):
         self.all_preds = all_preds
         self.all_labels = all_labels
 
-        # Now calculate metrics
-        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
+        # Calculate metrics
         accuracy = accuracy_score(all_labels, all_preds)
         precision = precision_score(all_labels, all_preds, average='macro', zero_division=0)
         recall = recall_score(all_labels, all_preds, average='macro', zero_division=0)
