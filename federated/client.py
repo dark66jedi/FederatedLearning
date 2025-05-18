@@ -182,39 +182,49 @@ class FLClient(fl.client.NumPyClient):
     
     def evaluate_model(self):
         """Evaluate the model on the test dataset and return various metrics."""
-        criterion = nn.CrossEntropyLoss()
         self.model.eval()
-        
+        criterion = torch.nn.CrossEntropyLoss()
+
         test_loss = 0.0
         all_preds = []
         all_labels = []
-        
+
         with torch.no_grad():
-            for batch_idx, batch in enumerate(self.testloader):
-                images, labels = batch["img"].to(DEVICE), batch["label"].to(DEVICE)
-                outputs = self.model(images)
+            for inputs, labels in self.testloader:
+                print(f"[DEBUG] Type of inputs: {type(inputs)}, Type of labels: {type(labels)}")
+                # Convert inputs and labels to tensors if they're not already
+                if isinstance(inputs, str):
+                    raise ValueError(f"Expected tensor for inputs but got str: {inputs}")
+                if isinstance(labels, str):
+                    raise ValueError(f"Expected tensor for labels but got str: {labels}")
+
+                inputs = inputs.to(self.device) if isinstance(inputs, torch.Tensor) else torch.tensor(inputs).to(self.device)
+                labels = labels.to(self.device) if isinstance(labels, torch.Tensor) else torch.tensor(labels).to(self.device)
+
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                outputs = self.model(inputs)
                 loss = criterion(outputs, labels)
                 test_loss += loss.item()
-                
+
                 _, predicted = torch.max(outputs.data, 1)
                 all_preds.extend(predicted.cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
-        
-        avg_test_loss = test_loss / len(self.testloader)
-        
-        # Calculate metrics
+
+        # Store for save_evaluation_results()
+        self.all_preds = all_preds
+        self.all_labels = all_labels
+
+        # Now calculate metrics
+        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
         accuracy = accuracy_score(all_labels, all_preds)
-        
-        # Handle potential warning for labels with no predictions
-        try:
-            precision = precision_score(all_labels, all_preds, average='macro', zero_division=0)
-            recall = recall_score(all_labels, all_preds, average='macro', zero_division=0)
-            f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
-        except Exception as e:
-            print(f"Warning in calculating metrics: {e}")
-            precision = recall = f1 = 0.0
-            
-        return avg_test_loss, accuracy, precision, recall, f1
+        precision = precision_score(all_labels, all_preds, average='macro', zero_division=0)
+        recall = recall_score(all_labels, all_preds, average='macro', zero_division=0)
+        f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
+
+        avg_loss = test_loss / len(self.testloader)
+
+        return avg_loss, accuracy, precision, recall, f1
     
     def save_evaluation_results(self, output_dir=None):
         """Save evaluation history to a file and generate plots."""
@@ -261,8 +271,8 @@ class FLClient(fl.client.NumPyClient):
         print(f"Metrics plot saved to {metrics_plot_file}")
         
         # Save confusion matrix for the last round if available
-        if len(all_labels) > 0 and len(all_preds) > 0:
-            cm = confusion_matrix(all_labels, all_preds)
+        if len(self.all_labels) > 0 and len(self.all_preds) > 0:
+            cm = confusion_matrix(self.all_labels, self.all_preds)
             plt.figure(figsize=(10, 8))
             sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
             plt.title(f'Client {self.cid} - Confusion Matrix (Last Round)')
