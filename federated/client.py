@@ -191,6 +191,16 @@ class FLClient(fl.client.NumPyClient):
 
         with torch.no_grad():
             for inputs, labels in self.testloader:
+                print(f"[DEBUG] Type of inputs: {type(inputs)}, Type of labels: {type(labels)}")
+                # Convert inputs and labels to tensors if they're not already
+                if isinstance(inputs, str):
+                    raise ValueError(f"Expected tensor for inputs but got str: {inputs}")
+                if isinstance(labels, str):
+                    raise ValueError(f"Expected tensor for labels but got str: {labels}")
+
+                inputs = inputs.to(self.device) if isinstance(inputs, torch.Tensor) else torch.tensor(inputs).to(self.device)
+                labels = labels.to(self.device) if isinstance(labels, torch.Tensor) else torch.tensor(labels).to(self.device)
+
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 outputs = self.model(inputs)
                 loss = criterion(outputs, labels)
