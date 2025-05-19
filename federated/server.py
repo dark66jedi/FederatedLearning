@@ -2,13 +2,38 @@ import flwr as fl
 import argparse
 from typing import Dict, List, Tuple, Optional
 import numpy as np
-from flwr.common import Metrics, Parameters, FitIns, EvaluateIns, FitRes, EvaluateRes, NDArrays, MetricsAggregationFn
+from typing import List, Tuple, Dict, Optional
+from flwr.common import Metrics, Parameters, FitRes, EvaluateRes, Scalar
 from flwr.server.client_proxy import ClientProxy
+from flwr.server.strategy import FedAvg
 import os
 import json
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
+
+class CustomFedAvg(FedAvg):
+    def __init__(self, server_instance, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.server = server_instance
+
+    def aggregate_fit(
+        self,
+        server_round: int,
+        results: List[Tuple[ClientProxy, FitRes]],
+        failures: List[Tuple[ClientProxy, FitRes]]
+    ) -> Tuple[Optional[Parameters], Dict[str, Scalar]]:
+        self.server.on_fit_result(server_round, results)
+        return super().aggregate_fit(server_round, results, failures)
+
+    def aggregate_evaluate(
+        self,
+        server_round: int,
+        results: List[Tuple[ClientProxy, EvaluateRes]],
+        failures: List[Tuple[ClientProxy, EvaluateRes]]
+    ) -> Optional[float]:
+        self.server.on_evaluate_result(server_round, results)
+        return super().aggregate_evaluate(server_round, results, failures)
 
 
 class FederatedLearningServer:
@@ -40,26 +65,28 @@ class FederatedLearningServer:
     def weighted_average(self, metrics: List[Tuple[int, Metrics]]) -> Metrics:
         """Aggregate metrics from multiple clients weighted by number of examples."""
         # Calculate weighted averages for each metric
-        accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
-        precisions = [num_examples * m["precision"] for num_examples, m in metrics]
-        recalls = [num_examples * m["recall"] for num_examples, m in metrics]
-        f1s = [num_examples * m["f1"] for num_examples, m in metrics]
-        losses = [num_examples * m["test_loss"] for num_examples, m in metrics if "test_loss" in m]
+        if not metrics:
+            return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0, "loss": 0.0}
         
         total_examples = sum([num_examples for num_examples, _ in metrics])
         
         if total_examples == 0:
             return {"accuracy": 0.0, "precision": 0.0, "recall": 0.0, "f1": 0.0, "loss": 0.0}
         
-        aggregated_metrics = {
-            "accuracy": sum(accuracies) / total_examples,
-            "precision": sum(precisions) / total_examples,
-            "recall": sum(recalls) / total_examples,
-            "f1": sum(f1s) / total_examples
-        }
+        # Handle metrics safely - clients might not all report the same metrics
+        aggregated_metrics = {}
+        metric_keys = ["accuracy", "precision", "recall", "f1", "test_loss"]
         
-        if losses:
-            aggregated_metrics["loss"] = sum(losses) / total_examples
+        for key in metric_keys:
+            values = [num_examples * m.get(key, 0.0) for num_examples, m in metrics if key in m]
+            if values:
+                aggregated_metrics[key] = sum(values) / total_examples
+            else:
+                aggregated_metrics[key] = 0.0
+                
+        # Rename test_loss to loss for consistency
+        if "test_loss" in aggregated_metrics:
+            aggregated_metrics["loss"] = aggregated_metrics.pop("test_loss")
             
         return aggregated_metrics
     
@@ -102,54 +129,45 @@ class FederatedLearningServer:
             client_history = self.global_history['client_metrics'][client_id]
             client_history['round'].append(server_round)
             
-            if 'train_loss' in metrics:
-                client_history['train_loss'].append(metrics['train_loss'])
-                print(f"Client {client_id} - Train Loss: {metrics['train_loss']:.4f}")
-            
-            if 'test_loss' in metrics:
-                client_history['test_loss'].append(metrics['test_loss'])
-                print(f"Client {client_id} - Test Loss: {metrics['test_loss']:.4f}")
-            
-            if 'accuracy' in metrics:
-                client_history['accuracy'].append(metrics['accuracy'])
-                print(f"Client {client_id} - Accuracy: {metrics['accuracy']:.4f}")
-            
-            if 'precision' in metrics:
-                client_history['precision'].append(metrics['precision'])
-                print(f"Client {client_id} - Precision: {metrics['precision']:.4f}")
-            
-            if 'recall' in metrics:
-                client_history['recall'].append(metrics['recall'])
-                print(f"Client {client_id} - Recall: {metrics['recall']:.4f}")
-            
-            if 'f1' in metrics:
-                client_history['f1'].append(metrics['f1'])
-                print(f"Client {client_id} - F1 Score: {metrics['f1']:.4f}")
+            # Safely add metrics (not all clients might report all metrics)
+            metric_keys = ['train_loss', 'test_loss', 'accuracy', 'precision', 'recall', 'f1']
+            for key in metric_keys:
+                if key in metrics:
+                    client_history[key].append(metrics[key])
+                    print(f"Client {client_id} - {key.replace('_', ' ').title()}: {metrics[key]:.4f}")
+                else:
+                    # Append None or the last value to keep arrays aligned
+                    if client_history[key]:
+                        client_history[key].append(client_history[key][-1])
+                    else:
+                        client_history[key].append(None)
     
     def on_evaluate_result(self, server_round: int, results: List[Tuple[ClientProxy, EvaluateRes]]):
         """Process results after each evaluation round."""
         print(f"\n--- Round {server_round} Evaluation Results ---")
         
+        if not results:
+            print("No evaluation results received.")
+            return
+            
         # Extract metrics
         metrics_list = [(eval_res.num_examples, eval_res.metrics) for _, eval_res in results]
         aggregated_metrics = self.weighted_average(metrics_list)
         
         # Store global metrics
         self.global_history['round'].append(server_round)
-        self.global_history['accuracy'].append(aggregated_metrics['accuracy'])
-        self.global_history['precision'].append(aggregated_metrics['precision'])
-        self.global_history['recall'].append(aggregated_metrics['recall'])
-        self.global_history['f1'].append(aggregated_metrics['f1'])
-        if 'loss' in aggregated_metrics:
-            self.global_history['loss'].append(aggregated_metrics['loss'])
+        self.global_history['accuracy'].append(aggregated_metrics.get('accuracy', 0.0))
+        self.global_history['precision'].append(aggregated_metrics.get('precision', 0.0))
+        self.global_history['recall'].append(aggregated_metrics.get('recall', 0.0))
+        self.global_history['f1'].append(aggregated_metrics.get('f1', 0.0))
+        self.global_history['loss'].append(aggregated_metrics.get('loss', 0.0))
         
         print(f"Global Metrics - Round {server_round}:")
-        print(f"  Accuracy: {aggregated_metrics['accuracy']:.4f}")
-        print(f"  Precision: {aggregated_metrics['precision']:.4f}")
-        print(f"  Recall: {aggregated_metrics['recall']:.4f}")
-        print(f"  F1 Score: {aggregated_metrics['f1']:.4f}")
-        if 'loss' in aggregated_metrics:
-            print(f"  Loss: {aggregated_metrics['loss']:.4f}")
+        print(f"  Accuracy: {aggregated_metrics.get('accuracy', 0.0):.4f}")
+        print(f"  Precision: {aggregated_metrics.get('precision', 0.0):.4f}")
+        print(f"  Recall: {aggregated_metrics.get('recall', 0.0):.4f}")
+        print(f"  F1 Score: {aggregated_metrics.get('f1', 0.0):.4f}")
+        print(f"  Loss: {aggregated_metrics.get('loss', 0.0):.4f}")
     
     def save_results(self):
         """Save evaluation history to files and generate plots."""
@@ -167,10 +185,9 @@ class FederatedLearningServer:
             'accuracy': self.global_history['accuracy'],
             'precision': self.global_history['precision'],
             'recall': self.global_history['recall'],
-            'f1': self.global_history['f1']
+            'f1': self.global_history['f1'],
+            'loss': self.global_history['loss']
         })
-        if 'loss' in self.global_history and self.global_history['loss']:
-            df['loss'] = self.global_history['loss']
         df.to_csv(csv_path, index=False)
         
         # Generate global plots
@@ -213,69 +230,83 @@ class FederatedLearningServer:
         plt.savefig(os.path.join(plots_dir, f"global_f1_{timestamp}.png"))
         plt.close()
         
-        # Global loss plot (if available)
-        if 'loss' in self.global_history and self.global_history['loss']:
-            plt.figure(figsize=(10, 6))
-            plt.plot(self.global_history['round'], self.global_history['loss'], 'r-', label='Loss')
-            plt.title('Global Loss over Rounds')
-            plt.xlabel('Round')
-            plt.ylabel('Loss')
-            plt.grid(True, alpha=0.3)
-            plt.legend()
-            plt.tight_layout()
-            plt.savefig(os.path.join(plots_dir, f"global_loss_{timestamp}.png"))
-            plt.close()
+        # Global loss plot
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.global_history['round'], self.global_history['loss'], 'r-', label='Loss')
+        plt.title('Global Loss over Rounds')
+        plt.xlabel('Round')
+        plt.ylabel('Loss')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(plots_dir, f"global_loss_{timestamp}.png"))
+        plt.close()
         
-        # Save client metrics
+        # Generate per-client plots
         client_dir = os.path.join(self.output_dir, "client_metrics")
         os.makedirs(client_dir, exist_ok=True)
         
         for client_id, metrics in self.global_history['client_metrics'].items():
+            # Save client metrics to CSV
             client_file = os.path.join(client_dir, f"client_{client_id}_metrics_{timestamp}.csv")
             client_df = pd.DataFrame(metrics)
             client_df.to_csv(client_file, index=False)
+            
+            # Plot client metrics
+            plt.figure(figsize=(12, 8))
+            plt.subplot(2, 1, 1)
+            if metrics['train_loss'] and any(x is not None for x in metrics['train_loss']):
+                plt.plot(metrics['round'], metrics['train_loss'], 'b-', label='Train Loss')
+            if metrics['test_loss'] and any(x is not None for x in metrics['test_loss']):
+                plt.plot(metrics['round'], metrics['test_loss'], 'r-', label='Test Loss')
+            plt.title(f'Client {client_id} - Loss over Rounds')
+            plt.xlabel('Round')
+            plt.ylabel('Loss')
+            plt.grid(True, alpha=0.3)
+            plt.legend()
+            
+            plt.subplot(2, 1, 2)
+            if metrics['accuracy'] and any(x is not None for x in metrics['accuracy']):
+                plt.plot(metrics['round'], metrics['accuracy'], 'g-', label='Accuracy')
+            if metrics['precision'] and any(x is not None for x in metrics['precision']):
+                plt.plot(metrics['round'], metrics['precision'], 'm-', label='Precision')
+            if metrics['recall'] and any(x is not None for x in metrics['recall']):
+                plt.plot(metrics['round'], metrics['recall'], 'c-', label='Recall')
+            if metrics['f1'] and any(x is not None for x in metrics['f1']):
+                plt.plot(metrics['round'], metrics['f1'], 'orange', label='F1 Score')
+            plt.title(f'Client {client_id} - Performance Metrics over Rounds')
+            plt.xlabel('Round')
+            plt.ylabel('Score')
+            plt.grid(True, alpha=0.3)
+            plt.legend()
+            
+            plt.tight_layout()
+            plt.savefig(os.path.join(client_dir, f"client_{client_id}_metrics_{timestamp}.png"))
+            plt.close()
         
         print(f"All results saved to {self.output_dir}")
     
     def start_server(self):
         """Initialize and start the FL server."""
-        # Define strategy
-        strategy = fl.server.strategy.FedAvg(
+        strategy = CustomFedAvg(
+            server_instance=self,
             fraction_fit=self.fraction_fit,
             min_fit_clients=self.min_fit_clients,
             min_available_clients=self.min_available_clients,
             on_fit_config_fn=self.fit_config,
             on_evaluate_config_fn=self.evaluate_config,
-            evaluate_metrics_aggregation_fn=self.weighted_average,  # Use custom aggregation function
+            evaluate_metrics_aggregation_fn=self.weighted_average,
         )
-        
-        # Define callbacks
-        class MetricsCallback(fl.server.ServerCallback):
-            def __init__(self, server_instance):
-                self.server = server_instance
-                
-            def on_fit_end(self, server_round, results, failures, parameters, **kwargs):
-                self.server.on_fit_result(server_round, results)
-                return None
-                
-            def on_evaluate_end(self, server_round, results, failures, parameters, **kwargs):
-                self.server.on_evaluate_result(server_round, results)
-                return None
-                
-            def on_server_finished(self, results, **kwargs):
-                self.server.save_results()
-                return None
-        
-        # Add callbacks
-        callback = MetricsCallback(self)
-        
-        # Start server with explicit host binding to allow external connections
+
         fl.server.start_server(
-            server_address="0.0.0.0:8080",  # Bind to all network interfaces
-            strategy=strategy,
+            server_address="0.0.0.0:8080",
             config=fl.server.ServerConfig(num_rounds=self.num_rounds),
-            callbacks=[callback],
+            strategy=strategy
         )
+
+        # After server ends, save results
+        self.save_results()
+
 
 
 if __name__ == "__main__":
