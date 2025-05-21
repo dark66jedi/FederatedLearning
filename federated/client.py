@@ -173,7 +173,9 @@ class FLClient(fl.client.NumPyClient):
         print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}, F1 Score: {f1:.4f}")
         
+        # FIXED: Return loss as 'loss' key instead of separate return value
         return float(test_loss), len(self.testloader.dataset), {
+            "loss": float(test_loss),  # ADDED: Include loss in metrics dict
             "accuracy": float(accuracy),
             "precision": float(precision),
             "recall": float(recall),
