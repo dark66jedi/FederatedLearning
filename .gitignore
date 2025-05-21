@@ -1,4 +1,4 @@
-env/
 classical/results/*
 federated/client_results/*
 federated/server_results/*
+federated/.env
