@@ -24,8 +24,8 @@ print(f"Using device: {DEVICE}")
 # Load datasets
 def load_datasets(partition_id: int):
     print(f"Loading dataset for partition {partition_id}...")
-    fds = FederatedDataset(dataset="cifar10", partitioners={"train": 10})
-    partition = fds.load_partition(partition_id)
+    fds = FederatedDataset(dataset="cifar10", partitioners={"train": 3})
+    partition = fds.load_partition(partition_id-1)
     partition_train_test = partition.train_test_split(test_size=0.2, seed=42)
     pytorch_transforms = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
