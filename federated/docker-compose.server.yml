@@ -11,10 +11,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - MIN_FIT_CLIENTS=2
-      - MIN_AVAILABLE_CLIENTS=2
-      - NUM_ROUNDS=5
-    command: python server.py --rounds ${NUM_ROUNDS:-5} --min_fit_clients ${MIN_FIT_CLIENTS:-2} --min_available_clients ${MIN_AVAILABLE_CLIENTS:-2} --output_dir /app/results
+      - MIN_FIT_CLIENTS=${MIN_FIT_CLIENTS}
+      - MIN_AVAILABLE_CLIENTS=${MIN_AVAILABLE_CLIENTS}
+      - NUM_ROUNDS=${NUM_ROUNDS}
+    command: python server.py --rounds ${NUM_ROUNDS} --min_fit_clients ${MIN_FIT_CLIENTS} --min_available_clients ${MIN_AVAILABLE_CLIENTS} --output_dir /app/results
     restart: on-failure
     networks:
       - fl-network
